@@ -1,0 +1,7 @@
+arrow
+python-dotenv
+rich
+python-frontmatter
+opensearch-py
+langchain
+sentence-transformers
