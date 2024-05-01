@@ -1,13 +1,12 @@
 # Getting Started with this Workshop
 
-In this workshop we will use Aiven for Apache Kafka® to deploy and manage our Apache Kafka® Service.
+In this workshop we will use Aiven for OpenSearch® to deploy and manage our OpenSearch® Service.
 
-We'll also be using this notebook environment. By the end of this notebook, you will have:
+We'll also be using this notebook environment. Before we start the workshop, you will need to:
 
-- Created an Aiven Account
-- Created a Aiven for Apache Kafka® service
-- Downloaded your needed ssl certificates
 - Setup your developer environment
+- Create an Aiven Account
+
 
 ## Setting up your workspace
 
@@ -45,14 +44,14 @@ Once the environment is loaded, you will need to install your python requirement
 
 ## Create your Aiven Account
 
-For this workshop, we'll be using Aiven to be the home for our Kafka Cluster.
+For this workshop, we'll be using Aiven to be the home for our OpenSearch®️ service.
 
-You can create a free trial at <https://go.aiven.io/ft-signup-kafka-python>.
+You can create a free trial at https://go.aiven.io/signup-opensearch-langchain-workshop.
 
 ## Start the workshop
 
- We'll start by creating your Aiven account and creating your Aiven for Kafka Cluster and your Aiven for Apache Flink service.
+ We'll start by setting up your project and creating your Aiven for Opensearch® service.
 
 Go to the [first notebook](0-setup.ipynb) or **press the button below** to get started.
 
-[![Setup Aiven for Apache Kafka®️](https://img.shields.io/badge/0-Setup%20Aiven%20for%20Apache%20Kafka-a03586?style=for-the-badge&labelColor=ec6147)](0-setup.ipynb) 
+[![Setup Aiven for Apache Kafka®️](https://img.shields.io/badge/0-Setup%20Aiven%20for%20OpenSearch-a03586?style=for-the-badge&labelColor=ec6147)](0-setup.ipynb) 
