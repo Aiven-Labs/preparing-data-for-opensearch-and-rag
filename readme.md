@@ -2,6 +2,10 @@
 
 This workshop aims to take unprepared data and make it usable with a Retrieval Augementation Generation (RAG) Pattern for a chat bot.
 
+### Learn more about regularly occuring Aiven workshops
+
+[![Click to Get Started](https://img.shields.io/badge/Learn%20about%20Upcoming%20Workshops!-005eb8?style=for-the-badge)](https://go.aiven.io/github-to-workshops-opensearch-langchain)
+
 In this workshop, we'll be using [Aiven for OpenSearch](https://aiven.io/opensearch) and [LangChain](https://www.langchain.com/) to:
 
 * Chunk transcription data and generate embeddings
@@ -13,7 +17,7 @@ In this workshop, we'll be using [Aiven for OpenSearch](https://aiven.io/opensea
 
 Our instructions and notebooks are in the `workshop` folder.
 
-[![Click to Get Started](https://img.shields.io/badge/Get%20Started!-a03586?style=for-the-badge)](./workshop/README.md)
+[![Click to Get Started](https://img.shields.io/badge/Get%20Started!-005eb8?style=for-the-badge)](./workshop/README.md)
 
 ## License
 
