@@ -1,7 +1,7 @@
 arrow
 python-dotenv
-rich
 python-frontmatter
 opensearch-py
 langchain
+langchain-openai
 sentence-transformers
