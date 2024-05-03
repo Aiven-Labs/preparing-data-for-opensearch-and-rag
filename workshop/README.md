@@ -54,4 +54,4 @@ You can create a free trial at https://go.aiven.io/signup-opensearch-langchain-w
 
 Go to the [first notebook](0-setup.ipynb) or **press the button below** to get started.
 
-[![Setup Aiven for OpenSearch®️®](https://img.shields.io/badge/0-Setup%20Aiven%20for%20OpenSearch-005eb8?style=for-the-badge&labelColor=ec6147)](0-setup.ipynb) 
+[![Setup Aiven for OpenSearch®️®](https://img.shields.io/badge/0-Setup%20Aiven%20for%20OpenSearch-153a5a?style=for-the-badge&labelColor=ec6147)](0-setup.ipynb) 
