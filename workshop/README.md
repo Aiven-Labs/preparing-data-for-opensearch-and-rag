@@ -30,7 +30,10 @@ You will also have all of the python requirements installed for you making it ea
 
 To use GitHub Codespaces, select the badge below.
 
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/aiven-labs/preparing-data-for-opensearch-and-rag)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://github.com/codespaces/new/aiven-labs/preparing-data-for-opensearch-and-rag?skip_quickstart=true&machine=standardLinux32gb&repo=794184618&ref=main&devcontainer_path=.devcontainer%2Fdevcontainer.json)
+
+> ![CAUTION]
+> The button above preconfigures the codespace with an increased memory. This ensures enough resources are available for embeddings and running a local llm
 
 ### GitPod
 

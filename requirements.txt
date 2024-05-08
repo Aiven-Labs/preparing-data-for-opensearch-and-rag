@@ -1,7 +1,9 @@
 arrow
-python-dotenv
-python-frontmatter
-opensearch-py
+ipywidgets
+jupyter
 langchain
 langchain-openai
+opensearch-py
+python-dotenv
+python-frontmatter
 sentence-transformers
