@@ -21,7 +21,7 @@ Our instructions and notebooks are in the `workshop` folder.
 
 ## License
 
-_Aiven for Apache Kafka®️ and Python_ tutorial is licensed under the Apache license, version 2.0. Full license text is available in the [LICENSE](LICENSE) file.
+The text and materials for this workshop are licensed under the Apache license, version 2.0. Full license text is available in the [LICENSE](LICENSE) file.
 
 Please note that the project explicitly does not require a CLA (Contributor License Agreement) from its contributors.
 
