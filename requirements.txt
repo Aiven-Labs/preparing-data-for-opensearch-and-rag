@@ -2,8 +2,8 @@ arrow
 ipywidgets
 jupyter
 langchain
+langchain_community
 langchain-huggingface
-langchain-community
 langchain-openai
 opensearch-py
 python-dotenv
