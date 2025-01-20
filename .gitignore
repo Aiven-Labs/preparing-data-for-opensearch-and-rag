@@ -1,5 +1,11 @@
+.envrc
 .env
-.DS_STORE
+terraform.tfstate
+terraform/.terraform*
+terraform.tfstate*
+terraform.tfvars
+
+DS_STORE
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
