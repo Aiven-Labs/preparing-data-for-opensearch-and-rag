@@ -35,14 +35,6 @@ To use GitHub Codespaces, select the badge below.
 > [!CAUTION]
 > The button above preconfigures the codespace with an increased memory. This ensures enough resources are available for embeddings and running a local llm
 
-### GitPod
-
-Similar to Codespaces, GitPod is a service you can use to deploy a prepared environment making it easy to get started.
-
-To use GitPod, select the badge below and create a gitpod account.
-
-[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/Aiven-Labs/preparing-data-for-opensearch-and-rag)
-
 Once the environment is loaded, you will need to install your python requirements
 
 ## Create your Aiven Account
