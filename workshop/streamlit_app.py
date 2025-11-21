@@ -33,11 +33,66 @@ if "embeddings" not in st.session_state:
     st.session_state.embeddings = None
 
 
+def get_base_episode_url(metadata: dict) -> str:
+    """Get the base episode URL (without timestamp) for uniqueness.
+    
+    Returns the original url field, or youtube_url if available, or youtube_video_id as fallback.
+    """
+    # Prefer original url field
+    base_url = metadata.get('url')
+    if base_url and base_url != 'N/A':
+        return base_url
+    
+    # Fall back to youtube_url if available
+    youtube_url = metadata.get('youtube_url')
+    if youtube_url:
+        return youtube_url
+    
+    # Last resort: construct from youtube_video_id
+    youtube_video_id = metadata.get('youtube_video_id')
+    if youtube_video_id:
+        return f"https://youtu.be/{youtube_video_id}"
+    
+    return 'N/A'
+
+
+def construct_episode_url(metadata: dict) -> str:
+    """Construct episode URL with timestamp support.
+    
+    If timestamp and youtube_video_id exist, constructs a timestamped YouTube URL.
+    Otherwise, falls back to the original url field.
+    """
+    timestamp = metadata.get('timestamp')
+    youtube_video_id = metadata.get('youtube_video_id')
+    
+    # Check if both timestamp and youtube_video_id exist and are not None
+    if timestamp is not None and youtube_video_id:
+        try:
+            # Ensure timestamp is an integer
+            timestamp_int = int(timestamp)
+            return f"https://youtu.be/{youtube_video_id}?t={timestamp_int}"
+        except (ValueError, TypeError):
+            # If timestamp conversion fails, fall through to original URL
+            pass
+    
+    # Fall back to base episode URL
+    return get_base_episode_url(metadata)
+
+
 @st.cache_resource
 def initialize_vector_search():
     """Initialize the OpenSearch vector search connection"""
     opensearch_url = os.getenv("OPENSEARCH_SERVICE_URI")
-    index_name = os.getenv("INDEX_NAME")
+    base_index_name = os.getenv("INDEX_NAME")
+    
+    # Use INDEX_NAME_WITH_TIMESTAMPS if set, otherwise default to {INDEX_NAME}_timestamps
+    index_name_with_timestamps = os.getenv("INDEX_NAME_WITH_TIMESTAMPS")
+    if index_name_with_timestamps:
+        index_name = index_name_with_timestamps
+    elif base_index_name:
+        index_name = f"{base_index_name}_timestamps"
+    else:
+        index_name = None
     
     if not opensearch_url or not index_name:
         st.error("Please set OPENSEARCH_SERVICE_URI and INDEX_NAME in your .env file")
@@ -76,7 +131,8 @@ def get_episodes_from_results(results):
         else:
             doc = result
         title = doc.metadata.get('title', 'Unknown')
-        url = doc.metadata.get('url', 'N/A')
+        # Use base URL (without timestamp) for uniqueness and display in episode list
+        base_url = get_base_episode_url(doc.metadata)
         description = doc.metadata.get('description', '')
         # Try multiple possible field names for image URL
         img_url = (
@@ -86,12 +142,14 @@ def get_episodes_from_results(results):
             doc.metadata.get('episode_image') or
             None
         )
-        episode_key = f"{title} - {url}"
+        # Use base URL for episode key to ensure uniqueness across chunks
+        episode_key = f"{title} - {base_url}"
         # Store the first occurrence of each episode with its img_url
+        # Use base URL for episode list (represents the whole episode, not a specific chunk)
         if episode_key not in episodes_dict:
             episodes_dict[episode_key] = {
                 'title': title,
-                'url': url,
+                'url': base_url,  # Use base URL for episode list (unique episodes)
                 'description': description,
                 'img_url': img_url
             }
@@ -107,18 +165,19 @@ def generate_response(query: str, docs: str, model_type: str, model_name: Option
         llm = ChatOpenAI(model=model_name or "gpt-3.5-turbo")
         prompt = ChatPromptTemplate.from_messages([
             ("system",
-             """Offer supportive advice for the question {query} with supporting quotes from 
-             ---
-             {docs}
-             ---
-            Wrap quotes in quotation marks. Don't include quotes from other sources.
-            If there are no documents to quote, say "I don't have any information on that."
+             """You are a helpful assistant answering questions about a podcast using the provided documents.
             
-            Mention the quote you're pulling from                                                                     
-            Don't include quotes from other sources
-            limit responses to under 1000 characters but use multiple paragraphs for readability
+            Use the following documents to answer the question. Each document has a Title, URL, and Content.
+            
+            Instructions:
+            - Answer the question using information from the provided documents
+            - Include supporting quotes from the documents, wrapped in quotation marks
+            - Mention which episode/document you're quoting from
+            - If there are no relevant documents, say "I don't have any information on that."
+            - Don't include quotes from other sources not in the provided documents
+            - Keep responses under 1000 characters but use multiple paragraphs for readability
             """),
-            ("user", "{query}"),
+            ("user", "Question: {query}\n\nDocuments:\n{docs}"),
         ])
     elif model_type == "Ollama":
         if not OLLAMA_AVAILABLE:
@@ -126,18 +185,23 @@ def generate_response(query: str, docs: str, model_type: str, model_name: Option
             return None
         llm = ChatOllama(model=model_name or "llama3")
         prompt = ChatPromptTemplate.from_template(
-            """
-            You are a helpful assistant who is answering questions about the podcast.
-            Look at the found quotes in "{docs}" and use them to answer the question {query}.
+            """You are a helpful assistant answering questions about a podcast using the provided documents.
 
-            Each document in "{docs}" is formatted with a "Title:" field, a "URL:" field, and a "Content:" field.
-            When citing quotes, use the title from the "Title:" field and the URL from the "URL:" field of the document you're quoting from.
+Question: {query}
 
-            If there are no documents to quote, say "I don't have any information on that."
+Documents:
+{docs}
 
-            When citing sources, format the citation as a clickable markdown link: [Title](URL), where Title comes from the "Title:" field and URL comes from the "URL:" field of the document you're quoting from. For example: "As mentioned in [Episode Title](https://example.com/episode)..."
-            Don't include quotes from other sources.
-            Make responses about 800 characters
+Instructions:
+- Answer the question using information from the provided documents above
+- Each document has a "Title:" field, a "URL:" field, and a "Content:" field
+- Include supporting quotes from the documents
+- When citing sources, format citations as clickable markdown links: [Title](URL)
+- Use the title from the "Title:" field and the URL from the "URL:" field of the document you're quoting from
+- Example: "As mentioned in [Episode Title](https://youtu.be/VIDEO_ID?t=123)..."
+- If there are no relevant documents, say "I don't have any information on that."
+- Don't include quotes from sources not in the provided documents
+- Keep responses around 800 characters
             """
         )
     else:
@@ -284,7 +348,8 @@ if query:
         for result in results:
             doc = result[0] if isinstance(result, tuple) else result
             title = doc.metadata.get('title', 'Unknown')
-            url = doc.metadata.get('url', 'N/A')
+            # Use helper function to construct URL with timestamp support
+            url = construct_episode_url(doc.metadata)
             content = doc.page_content
             formatted_docs.append(f"Title: {title}\nURL: {url}\nContent: {content}")
         docs_text = "\n\n".join(formatted_docs)
