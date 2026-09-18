@@ -1,0 +1,11 @@
+.git
+.devcontainer
+workshop
+transcripts
+transcripts_complete
+terraform
+*.md
+img
+.env
+.venv
+__pycache__

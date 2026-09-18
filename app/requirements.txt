@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+python-multipart
+python-frontmatter
+langchain-text-splitters
+langchain-huggingface
+sentence-transformers
+opensearch-py
+pypdf
+boto3

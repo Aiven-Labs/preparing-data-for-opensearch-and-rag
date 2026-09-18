@@ -1,0 +1,70 @@
+services:
+  opensearch:
+    image: opensearchproject/opensearch:2
+    environment:
+      discovery.type: single-node
+      OPENSEARCH_INITIAL_ADMIN_PASSWORD: ${OPENSEARCH_INITIAL_ADMIN_PASSWORD:?set OPENSEARCH_INITIAL_ADMIN_PASSWORD in .env}
+    ports:
+      - "9200:9200"
+    volumes:
+      - opensearch-data:/usr/share/opensearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sk -u admin:$$OPENSEARCH_INITIAL_ADMIN_PASSWORD https://localhost:9200/_cluster/health | grep -q '\"status\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  rustfs:
+    image: rustfs/rustfs:latest
+    environment:
+      RUSTFS_ACCESS_KEY: ${S3_ACCESS_KEY_ID:-rustfsadmin}
+      RUSTFS_SECRET_KEY: ${S3_SECRET_ACCESS_KEY:-rustfsadmin}
+      RUSTFS_ADDRESS: ":9000"
+      RUSTFS_CONSOLE_ADDRESS: ":9001"
+      RUSTFS_CONSOLE_ENABLE: "true"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - rustfs-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:9000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  rustfs-init:
+    image: quay.io/minio/mc
+    depends_on:
+      rustfs:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://rustfs:9000 ${S3_ACCESS_KEY_ID:-rustfsadmin} ${S3_SECRET_ACCESS_KEY:-rustfsadmin} &&
+      mc mb --ignore-existing local/${S3_BUCKET:-rag-documents}
+      "
+
+  rag-uploader:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      OPENSEARCH_SERVICE_URI: https://admin:${OPENSEARCH_INITIAL_ADMIN_PASSWORD}@opensearch:9200
+      OPENSEARCH_VERIFY_CERTS: "false"
+      INDEX_NAME: ${INDEX_NAME:-rag-documents}
+      S3_BUCKET: ${S3_BUCKET:-rag-documents}
+      S3_ENDPOINT_URL: http://rustfs:9000
+      AWS_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-rustfsadmin}
+      AWS_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-rustfsadmin}
+      AWS_DEFAULT_REGION: us-east-1
+    depends_on:
+      opensearch:
+        condition: service_healthy
+      rustfs-init:
+        condition: service_completed_successfully
+
+volumes:
+  opensearch-data:
+  rustfs-data:

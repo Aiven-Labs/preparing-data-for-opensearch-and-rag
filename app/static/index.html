@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RAG Document Uploader</title>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    max-width: 720px;
+    margin: 3rem auto;
+    padding: 0 1rem;
+    line-height: 1.5;
+  }
+  h1 { font-size: 1.4rem; }
+  #dropzone {
+    border: 2px dashed #888;
+    border-radius: 12px;
+    padding: 3rem 1rem;
+    text-align: center;
+    color: #888;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  #dropzone.dragover {
+    border-color: #0d6efd;
+    background: rgba(13, 110, 253, 0.08);
+    color: #0d6efd;
+  }
+  #fileInput { display: none; }
+  #status { margin-top: 1rem; font-size: 0.9rem; }
+  .row { display: flex; gap: 0.5rem; margin-top: 2rem; }
+  input[type="search"] {
+    flex: 1;
+    padding: 0.5rem 0.75rem;
+    font-size: 1rem;
+  }
+  button {
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+  ul#results { list-style: none; padding: 0; margin-top: 1rem; }
+  ul#results li {
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.75rem;
+  }
+  ul#results li h3 { margin: 0 0 0.25rem; font-size: 1rem; }
+  ul#results li h3 a { color: inherit; text-decoration: none; }
+  ul#results li h3 a:hover { text-decoration: underline; }
+  ul#results li p { margin: 0; font-size: 0.9rem; opacity: 0.85; }
+  .score { font-size: 0.75rem; opacity: 0.6; }
+  h2 { font-size: 1.1rem; margin-top: 2.5rem; }
+  ul#fileList { list-style: none; padding: 0; margin-top: 0.75rem; }
+  ul#fileList li { margin-bottom: 0.4rem; }
+  ul#fileList a { color: #0d6efd; text-decoration: none; }
+  ul#fileList a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+  <h1>RAG Document Uploader</h1>
+
+  <div id="dropzone">
+    Drag &amp; drop .txt, .md, or .pdf files here<br>or click to browse
+  </div>
+  <input type="file" id="fileInput" multiple accept=".txt,.md,.pdf">
+  <div id="status"></div>
+
+  <div class="row">
+    <input type="search" id="searchInput" placeholder="Search indexed documents…">
+    <button id="searchButton">Search</button>
+  </div>
+  <ul id="results"></ul>
+
+  <h2>Saved Files</h2>
+  <ul id="fileList"></ul>
+
+<script>
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  const status = document.getElementById('status');
+  const searchInput = document.getElementById('searchInput');
+  const searchButton = document.getElementById('searchButton');
+  const results = document.getElementById('results');
+  const fileList = document.getElementById('fileList');
+
+  dropzone.addEventListener('click', () => fileInput.click());
+
+  ['dragenter', 'dragover'].forEach(evt =>
+    dropzone.addEventListener(evt, e => {
+      e.preventDefault();
+      dropzone.classList.add('dragover');
+    })
+  );
+
+  ['dragleave', 'drop'].forEach(evt =>
+    dropzone.addEventListener(evt, e => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+    })
+  );
+
+  dropzone.addEventListener('drop', e => uploadFiles(e.dataTransfer.files));
+  fileInput.addEventListener('change', e => uploadFiles(e.target.files));
+
+  async function uploadFiles(files) {
+    for (const file of files) {
+      status.textContent = `Uploading ${file.name}…`;
+      const formData = new FormData();
+      formData.append('file', file);
+      try {
+        const res = await fetch('/upload', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Upload failed');
+        status.textContent = `Indexed ${file.name}: ${data.chunks_indexed} chunk(s).`;
+      } catch (err) {
+        status.textContent = `Failed to upload ${file.name}: ${err.message}`;
+      }
+    }
+    loadFiles();
+  }
+
+  async function loadFiles() {
+    try {
+      const res = await fetch('/files');
+      if (!res.ok) return; // S3 not configured
+      const data = await res.json();
+      fileList.innerHTML = '';
+      for (const key of data.files) {
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.href = `/files/${encodeURIComponent(key)}`;
+        a.target = '_blank';
+        a.rel = 'noopener';
+        a.textContent = key;
+        li.appendChild(a);
+        fileList.appendChild(li);
+      }
+    } catch {
+      // S3 not configured; leave the list empty.
+    }
+  }
+
+  async function runSearch() {
+    const query = searchInput.value.trim();
+    if (!query) return;
+    results.innerHTML = '<li>Searching…</li>';
+    try {
+      const res = await fetch(`/search?query=${encodeURIComponent(query)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Search failed');
+      results.innerHTML = '';
+      if (data.results.length === 0) {
+        results.innerHTML = '<li>No results found.</li>';
+        return;
+      }
+      for (const r of data.results) {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <h3></h3>
+          <p>${r.content ?? ''}</p>
+          <span class="score">score: ${r.score.toFixed(3)}${r.page ? ` · page ${r.page}` : ''}</span>
+        `;
+        const heading = li.querySelector('h3');
+        if (r.url) {
+          const link = document.createElement('a');
+          link.href = `/files/${encodeURIComponent(r.url)}${r.page ? '#page=' + r.page : ''}`;
+          link.target = '_blank';
+          link.rel = 'noopener';
+          link.textContent = r.title ?? r.url;
+          heading.appendChild(link);
+        } else {
+          heading.textContent = r.title ?? 'Untitled';
+        }
+        results.appendChild(li);
+      }
+    } catch (err) {
+      results.innerHTML = `<li>Error: ${err.message}</li>`;
+    }
+  }
+
+  searchButton.addEventListener('click', runSearch);
+  searchInput.addEventListener('keydown', e => { if (e.key === 'Enter') runSearch(); });
+
+  loadFiles();
+</script>
+</body>
+</html>
