@@ -9,3 +9,5 @@ opensearch-py
 python-dotenv
 python-frontmatter
 sentence-transformers
+streamlit
+langchain-ollama
